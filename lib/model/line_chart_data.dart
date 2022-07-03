@@ -1,5 +1,3 @@
-import 'dart:math';
-
 class LineChartData {
   LineChartData(this.x, this.y);
 

@@ -7,22 +7,28 @@ class LineChartPainter extends CustomPainter {
   LineChartPainter({
     required this.data,
     required this.horizontalAxisInterval,
+    required this.selectedIndex,
   });
 
   final List<LineChartData> data;
   final double horizontalAxisInterval;
+  final int? selectedIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 2),
       width: size.width,
-      height: size.height / 1.2,
+      height: size.height * heightRatio,
     );
 
     drawBorder(canvas, rect);
     drawChart(canvas, rect);
     drawLabels(canvas, rect);
+    if (selectedIndex != null) {
+      drawLine(canvas, rect, selectedIndex!);
+      drawCircle(canvas, rect, selectedIndex!);
+    }
   }
 
   @override
@@ -52,17 +58,17 @@ class LineChartPainter extends CustomPainter {
 
   void drawChart(Canvas canvas, Rect rect) {
     final paintStroke = Paint()
-      ..color = Colors.green
-      ..strokeWidth = 3.0
+      ..color = bitcoinColor
+      ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
     final paintFill = Paint()
-      ..color = Colors.green
+      ..color = bitcoinColor
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.green.withOpacity(0.8),
-          Colors.green.withOpacity(0.1),
+          bitcoinColor.withOpacity(0.4),
+          bitcoinColor.withOpacity(0.1),
         ],
       ).createShader(rect);
 
@@ -109,9 +115,9 @@ class LineChartPainter extends CustomPainter {
     final span = data.length ~/ (xLableNum + 1);
 
     var year = 0;
-    for (var j = 1; j <= xLableNum; j++) {
+    for (var i = 1; i <= xLableNum; i++) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(
-        data[j * span].x.toInt() * 1000,
+        data[i * span].x.toInt() * 1000,
       );
 
       var formatedDateTime = '';
@@ -126,7 +132,7 @@ class LineChartPainter extends CustomPainter {
       drawText(
         canvas,
         Offset(
-          rect.left + rect.width * j * span / data.length,
+          rect.left + rect.width * i * span / data.length,
           rect.bottom + bottomPadding,
         ),
         textWidth,
@@ -176,6 +182,60 @@ class LineChartPainter extends CustomPainter {
             : position.dx + leftPadding,
         position.dy - textPainter.height / 2,
       ),
+    );
+  }
+
+  void drawLine(
+    Canvas canvas,
+    Rect rect,
+    int selectedIndex,
+  ) {
+    final paint = Paint()
+      ..color = Colors.grey.withOpacity(0.5)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final dx = rect.left + rect.width * selectedIndex / (data.length - 1);
+    var dy = rect.top;
+    const dashWidth = 4;
+    const dashSpace = 4;
+
+    while (dy < rect.bottom) {
+      canvas.drawLine(
+        Offset(
+          dx,
+          dy,
+        ),
+        Offset(
+          dx,
+          dy + dashWidth,
+        ),
+        paint,
+      );
+      dy += dashWidth + dashSpace;
+    }
+  }
+
+  void drawCircle(
+    Canvas canvas,
+    Rect rect,
+    int selectedIndex,
+  ) {
+    final paint = Paint()
+      ..color = bitcoinColor
+      ..style = PaintingStyle.fill;
+
+    final minChartY = data.minChartY(horizontalAxisInterval);
+    final deltaChartY = data.maxChartY(horizontalAxisInterval) - minChartY;
+
+    canvas.drawCircle(
+      Offset(
+        rect.left + rect.width * selectedIndex / (data.length - 1),
+        rect.bottom -
+            (data[selectedIndex].y - minChartY) / deltaChartY * rect.height,
+      ),
+      4,
+      paint,
     );
   }
 }

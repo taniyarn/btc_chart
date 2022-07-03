@@ -13,6 +13,16 @@ class ChartView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ohlcs = ref.watch(ohlcProvider);
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Bitcoin',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+          ),
+        ),
+        backgroundColor: bitcoinColor,
+      ),
       body: ohlcs.when(
         data: (_ohlcs) => Column(
           children: [
@@ -33,7 +43,9 @@ class ChartView extends ConsumerWidget {
           ],
         ),
         loading: () => const Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(
+            color: bitcoinColor,
+          ),
         ),
         error: (error, _) => Text(error.toString()),
       ),
