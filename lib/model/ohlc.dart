@@ -1,5 +1,5 @@
-class DataModel {
-  DataModel({
+class Ohlc {
+  Ohlc({
     required this.closeTime,
     required this.openPrice,
     required this.highPrice,
@@ -9,8 +9,8 @@ class DataModel {
     required this.quoteVolume,
   });
 
-  factory DataModel.fromList(List list) {
-    return DataModel(
+  factory Ohlc.fromList(List list) {
+    return Ohlc(
       closeTime: list[0] as int,
       openPrice: list[1] as int,
       highPrice: list[2] as int,

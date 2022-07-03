@@ -14,11 +14,11 @@ class LineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      child: Container(),
       painter: LineChartPainter(
         data: data,
         horizontalAxisInterval: horizontalAxisInterval,
       ),
+      child: Container(),
     );
   }
 }
