@@ -1,7 +1,8 @@
 import 'package:btc_chart/controller/ohlc_controller.dart';
+import 'package:btc_chart/model/line_chart_bar_data.dart';
+import 'package:btc_chart/model/line_chart_data.dart';
 import 'package:btc_chart/model/spot.dart';
 import 'package:btc_chart/view/chart_const.dart';
-import 'package:btc_chart/view/chart_header.dart';
 import 'package:btc_chart/view/line_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +16,7 @@ class ChartView extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Bitcoin',
+          'Line Chart Sample',
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -26,17 +27,43 @@ class ChartView extends ConsumerWidget {
       body: ohlcs.when(
         data: (_ohlcs) => Column(
           children: [
-            const ChartHeader(),
             Expanded(
               child: LineChart(
-                data: _ohlcs
-                    .map(
-                      (ohlc) => Spot(
-                        ohlc.closeTime,
-                        ohlc.closePrice,
-                      ),
-                    )
-                    .toList(),
+                data: LineChartData([
+                  LineChartBarData(
+                    spots: _ohlcs
+                        .map(
+                          (ohlc) => Spot(
+                            ohlc.closeTime,
+                            ohlc.closePrice,
+                          ),
+                        )
+                        .toList(),
+                    color: Colors.blue,
+                  ),
+                  LineChartBarData(
+                    spots: _ohlcs
+                        .map(
+                          (ohlc) => Spot(
+                            ohlc.closeTime,
+                            ohlc.closePrice / 10,
+                          ),
+                        )
+                        .toList(),
+                    color: Colors.red,
+                  ),
+                  LineChartBarData(
+                    spots: _ohlcs
+                        .map(
+                          (ohlc) => Spot(
+                            ohlc.closeTime,
+                            ohlc.closePrice / 20,
+                          ),
+                        )
+                        .toList(),
+                    color: Colors.green,
+                  ),
+                ]),
                 horizontalAxisInterval: horizontalAxisInterval,
               ),
             ),

@@ -1,3 +1,5 @@
+import 'package:btc_chart/model/line_chart_bar_data.dart';
+import 'package:btc_chart/model/line_chart_data.dart';
 import 'package:btc_chart/model/spot.dart';
 import 'package:btc_chart/view/chart_const.dart';
 import 'package:flutter/material.dart';
@@ -5,14 +7,17 @@ import 'package:intl/intl.dart' show NumberFormat;
 
 class LineChartPainter extends CustomPainter {
   LineChartPainter({
+    required this.notifier,
     required this.data,
     required this.horizontalAxisInterval,
-    required this.selectedIndex,
-  });
+  })  : _selectedBarData = null,
+        super(repaint: notifier);
 
-  final List<Spot> data;
+  final ValueNotifier<Offset> notifier;
+  final LineChartData data;
   final double horizontalAxisInterval;
-  final int? selectedIndex;
+
+  LineChartBarData? _selectedBarData;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -21,28 +26,33 @@ class LineChartPainter extends CustomPainter {
       width: size.width,
       height: size.height * heightRatio,
     );
+    _selectedBarData = null;
+    for (final barData in data.barsData) {
+      drawTappableArea(canvas, rect, barData);
+    }
+    for (final barData in data.barsData) {
+      drawChart(canvas, rect, barData);
+    }
 
     drawBorder(canvas, rect);
-    drawChart(canvas, rect);
+
     drawLabels(canvas, rect);
-    if (selectedIndex != null) {
-      drawLine(canvas, rect, selectedIndex!);
-      drawCircle(canvas, rect, selectedIndex!);
-    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+    return false;
   }
 
   void drawBorder(Canvas canvas, Rect rect) {
     final paint = Paint()
       ..color = Colors.grey.withOpacity(0.5)
       ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+      ..style = PaintingStyle.fill;
 
-    final gridNum = data.getGridNum(horizontalAxisInterval);
+    // TODO: Calculate GridNum dynamically
+    final gridNum =
+        data.barsData.first.spots.getGridNum(horizontalAxisInterval);
     final span = rect.height / (gridNum - 1);
     var y = rect.bottom;
 
@@ -56,50 +66,79 @@ class LineChartPainter extends CustomPainter {
     }
   }
 
-  void drawChart(Canvas canvas, Rect rect) {
-    final paintStroke = Paint()
-      ..color = bitcoinColor
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    final paintFill = Paint()
-      ..color = bitcoinColor
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          bitcoinColor.withOpacity(0.4),
-          bitcoinColor.withOpacity(0.1),
-        ],
-      ).createShader(rect);
-
-    final span = rect.width / (data.length - 1);
-    final path = Path();
+  void drawTappableArea(Canvas canvas, Rect rect, LineChartBarData barData) {
+    final span = rect.width / (barData.spots.length - 1);
     var x = rect.left;
-    var first = true;
 
-    final minChartY = data.minChartY(horizontalAxisInterval);
-    final deltaChartY = data.maxChartY(horizontalAxisInterval) - minChartY;
+    final minChartY = barData.spots.minChartY(horizontalAxisInterval);
+    final deltaChartY =
+        barData.spots.maxChartY(horizontalAxisInterval) - minChartY;
 
-    for (final d in data) {
+    final points = <Offset>[];
+    for (final d in barData.spots) {
       final y = rect.bottom - (d.y - minChartY) / deltaChartY * rect.height;
-
-      if (first) {
-        path.moveTo(x, y);
-        first = false;
-      } else {
-        path.lineTo(x, y);
-      }
-
+      points.add(Offset(x, y));
       x += span;
     }
 
+    const tappableWidth = 32.0;
+    final tappablePath = Path();
+    for (var i = 0; i < points.length - 3; i++) {
+      final dr = points[i + 3] - points[i];
+      final dn = Offset(-dr.dy / dr.distance, dr.dx / dr.distance);
+      final cornerLeftTop = points[i] + dn * tappableWidth / 2;
+      final cornerRightTop = cornerLeftTop + dr;
+      final cornerRightBottom = cornerRightTop - dn * tappableWidth;
+      final cornerLeftBottom = cornerRightBottom - dr;
+      final rectangle = Path()
+        ..moveTo(cornerLeftTop.dx, cornerLeftTop.dy)
+        ..lineTo(cornerRightTop.dx, cornerRightTop.dy)
+        ..lineTo(cornerRightBottom.dx, cornerRightBottom.dy)
+        ..lineTo(cornerLeftBottom.dx, cornerLeftBottom.dy)
+        ..lineTo(cornerLeftTop.dx, cornerLeftTop.dy);
+      tappablePath.addPath(rectangle, Offset.zero);
+    }
+
+    final selected = tappablePath.contains(notifier.value);
+
+    _selectedBarData ??= selected ? barData : null;
+
+    final paintStroke = Paint()
+      ..color = barData.color.withOpacity(selected ? 0.3 : 0.1)
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(tappablePath, paintStroke);
+  }
+
+  void drawChart(Canvas canvas, Rect rect, LineChartBarData barData) {
+    final paintStroke = Paint()
+      ..color = barData.color.withOpacity(0.3)
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke;
+
+    final span = rect.width / (barData.spots.length - 1);
+    final path = Path();
+    var x = rect.left;
+
+    final minChartY = barData.spots.minChartY(horizontalAxisInterval);
+    final deltaChartY =
+        barData.spots.maxChartY(horizontalAxisInterval) - minChartY;
+
+    final points = <Offset>[];
+    for (final d in barData.spots) {
+      final y = rect.bottom - (d.y - minChartY) / deltaChartY * rect.height;
+
+      points.add(Offset(x, y));
+
+      x += span;
+    }
+    path.addPolygon(points, false);
+
+    if (_selectedBarData == null || barData == _selectedBarData) {
+      paintStroke.color = paintStroke.color.withOpacity(1);
+    }
     canvas.drawPath(path, paintStroke);
-
-    path
-      ..lineTo(rect.right, rect.bottom)
-      ..lineTo(rect.left, rect.bottom);
-
-    canvas.drawPath(path, paintFill);
   }
 
   void drawLabels(Canvas canvas, Rect rect) {
@@ -112,12 +151,12 @@ class LineChartPainter extends CustomPainter {
   }
 
   void drawXLabel(Canvas canvas, Rect rect, TextStyle labelStyle) {
-    final span = data.length ~/ (xLableNum + 1);
+    final span = data.barsData.first.spots.length ~/ (xLableNum + 1);
 
     var year = 0;
     for (var i = 1; i <= xLableNum; i++) {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(
-        data[i * span].x.toInt() * 1000,
+        data.barsData.first.spots[i * span].x.toInt() * 1000,
       );
 
       var formatedDateTime = '';
@@ -132,7 +171,7 @@ class LineChartPainter extends CustomPainter {
       drawText(
         canvas,
         Offset(
-          rect.left + rect.width * i * span / data.length,
+          rect.left + rect.width * i * span / data.barsData.first.spots.length,
           rect.bottom + bottomPadding,
         ),
         textWidth,
@@ -143,7 +182,9 @@ class LineChartPainter extends CustomPainter {
   }
 
   void drawYLabel(Canvas canvas, Rect rect, TextStyle labelStyle) {
-    final gridNum = data.getGridNum(horizontalAxisInterval);
+    // TODO: Calculate GridNum dynamically
+    final gridNum =
+        data.barsData.first.spots.getGridNum(horizontalAxisInterval);
     final span = rect.height / (gridNum - 1);
     var y = rect.bottom;
 
@@ -154,7 +195,9 @@ class LineChartPainter extends CustomPainter {
         textWidth,
         labelStyle,
         NumberFormat('#,###').format(
-          data.minChartY(horizontalAxisInterval) + i * horizontalAxisInterval,
+          // TODO: Calculate minChartY dynamically
+          data.barsData.first.spots.minChartY(horizontalAxisInterval) +
+              i * horizontalAxisInterval,
         ),
         isCentered: false,
       );
@@ -182,60 +225,6 @@ class LineChartPainter extends CustomPainter {
             : position.dx + leftPadding,
         position.dy - textPainter.height / 2,
       ),
-    );
-  }
-
-  void drawLine(
-    Canvas canvas,
-    Rect rect,
-    int selectedIndex,
-  ) {
-    final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final dx = rect.left + rect.width * selectedIndex / (data.length - 1);
-    var dy = rect.top;
-    const dashWidth = 4;
-    const dashSpace = 4;
-
-    while (dy < rect.bottom) {
-      canvas.drawLine(
-        Offset(
-          dx,
-          dy,
-        ),
-        Offset(
-          dx,
-          dy + dashWidth,
-        ),
-        paint,
-      );
-      dy += dashWidth + dashSpace;
-    }
-  }
-
-  void drawCircle(
-    Canvas canvas,
-    Rect rect,
-    int selectedIndex,
-  ) {
-    final paint = Paint()
-      ..color = bitcoinColor
-      ..style = PaintingStyle.fill;
-
-    final minChartY = data.minChartY(horizontalAxisInterval);
-    final deltaChartY = data.maxChartY(horizontalAxisInterval) - minChartY;
-
-    canvas.drawCircle(
-      Offset(
-        rect.left + rect.width * selectedIndex / (data.length - 1),
-        rect.bottom -
-            (data[selectedIndex].y - minChartY) / deltaChartY * rect.height,
-      ),
-      4,
-      paint,
     );
   }
 }
