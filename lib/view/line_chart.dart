@@ -1,5 +1,5 @@
 import 'package:btc_chart/controller/ohlc_controller.dart';
-import 'package:btc_chart/model/line_chart_data.dart';
+import 'package:btc_chart/model/spot.dart';
 import 'package:btc_chart/view/line_chart_painter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +10,7 @@ class LineChart extends ConsumerStatefulWidget {
     required this.data,
     required this.horizontalAxisInterval,
   }) : super(key: key);
-  final List<LineChartData> data;
+  final List<Spot> data;
   final double horizontalAxisInterval;
 
   @override

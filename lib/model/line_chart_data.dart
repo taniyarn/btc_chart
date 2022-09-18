@@ -1,25 +1,11 @@
-class LineChartData {
-  LineChartData(this.x, this.y);
+import 'package:btc_chart/model/line_chart_bar_data.dart';
+import 'package:equatable/equatable.dart';
 
-  final num x;
-  final num y;
-}
+class LineChartData extends Equatable {
+  const LineChartData(this.barsData);
 
-extension ListExtensionForLineChartData on List<LineChartData> {
-  num get minY {
-    final temp = map((d) => d.y).toList()..sort();
-    return temp.first;
-  }
+  final List<LineChartBarData> barsData;
 
-  num get maxY {
-    final temp = map((d) => d.y).toList()..sort();
-    return temp.last;
-  }
-
-  num minChartY(num interval) => (minY / interval).floor() * interval;
-
-  num maxChartY(num interval) => (maxY / interval).ceil() * interval;
-
-  int getGridNum(num interval) =>
-      (maxY / interval).ceil() - (minY / interval).floor() + 1;
+  @override
+  List<Object?> get props => [barsData];
 }

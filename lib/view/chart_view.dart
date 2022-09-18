@@ -1,5 +1,5 @@
 import 'package:btc_chart/controller/ohlc_controller.dart';
-import 'package:btc_chart/model/line_chart_data.dart';
+import 'package:btc_chart/model/spot.dart';
 import 'package:btc_chart/view/chart_const.dart';
 import 'package:btc_chart/view/chart_header.dart';
 import 'package:btc_chart/view/line_chart.dart';
@@ -31,7 +31,7 @@ class ChartView extends ConsumerWidget {
               child: LineChart(
                 data: _ohlcs
                     .map(
-                      (ohlc) => LineChartData(
+                      (ohlc) => Spot(
                         ohlc.closeTime,
                         ohlc.closePrice,
                       ),

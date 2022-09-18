@@ -1,4 +1,4 @@
-import 'package:btc_chart/model/line_chart_data.dart';
+import 'package:btc_chart/model/spot.dart';
 import 'package:btc_chart/view/chart_const.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
@@ -10,7 +10,7 @@ class LineChartPainter extends CustomPainter {
     required this.selectedIndex,
   });
 
-  final List<LineChartData> data;
+  final List<Spot> data;
   final double horizontalAxisInterval;
   final int? selectedIndex;
 
